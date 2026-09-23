@@ -1,0 +1,15 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "App",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "npm run build --prefix frontend && uv run microsandbox-studio",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "DEV": "true"
+            }
+        }
+    ]
+}

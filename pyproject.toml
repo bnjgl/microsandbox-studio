@@ -1,0 +1,29 @@
+[project]
+name = "microsandbox-studio"
+version = "0.1.0"
+description = "Microsandbox Studio: desktop app for local microsandbox environments"
+readme = "README.md"
+authors = [
+    { name = "Benjamin Gangl", email = "bnjgl@proton.me" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "microsandbox>=0.7.2",
+    "pywebview>=6.2.1",
+]
+
+[project.scripts]
+microsandbox-studio = "microsandbox_studio:main"
+
+[build-system]
+requires = ["uv_build>=0.12.13,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.16.9",
+]
+
+[tool.ruff]
+line-length = 120
