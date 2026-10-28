@@ -1,0 +1,64 @@
+[project]
+name = "microsandbox-studio"
+version = "0.1.0"
+description = "Microsandbox Studio: desktop app for local microsandbox environments"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [
+    { name = "bnjgl" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "microsandbox==0.7.11",
+    "pydantic>=2.14.1",
+    "pywebview>=6.2.1",
+    "pygobject; sys_platform == 'linux'",
+]
+
+[project.scripts]
+microsandbox-studio = "microsandbox_studio.app:main"
+
+[build-system]
+requires = ["uv_build>=0.12.13,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.16.9",
+]
+
+[tool.ruff]
+line-length = 120
+
+[tool.briefcase]
+bundle = "io.github.bnjgl"
+url = "https://github.com/bnjgl/microsandbox-studio"
+
+[tool.briefcase.app.microsandbox-studio]
+formal_name = "Microsandbox Studio"
+long_description = """
+A small interface over the Microsandbox Python SDK. Each sandbox is a card with its
+settings: resources, variables and secrets, network and workspace folders. Sandboxes
+are reached over SSH from a terminal, an editor or an agent harness.
+"""
+
+sources = ["src/microsandbox_studio"]
+icon = "src/microsandbox_studio/assets/icon"
+
+[tool.briefcase.app.microsandbox-studio.macOS]
+universal_build = false
+entitlement."com.apple.security.hypervisor" = true
+requirement_installer_args = ["--find-links", "./wheels"]
+
+[tool.briefcase.app.microsandbox-studio.windows]
+requirement_installer_args = ["--find-links", "./wheels"]
+
+[tool.briefcase.app.microsandbox-studio.linux.system.debian]
+system_requires = ["libcairo2-dev", "libgirepository-2.0-dev", "pkg-config"]
+system_runtime_requires = ["libgirepository-2.0-0", "gir1.2-gtk-3.0", "gir1.2-webkit2-4.1"]
+
+[tool.briefcase.app.microsandbox-studio.linux.system.rhel]
+system_requires = ["cairo-gobject-devel", "gobject-introspection-devel"]
+system_runtime_requires = ["gobject-introspection", "gtk3", "webkit2gtk4.1"]
