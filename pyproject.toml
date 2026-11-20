@@ -1,6 +1,6 @@
 [project]
 name = "microsandbox-studio"
-version = "0.1.1"
+version = "0.2.0"
 description = "Microsandbox Studio: desktop app for local microsandbox environments"
 readme = "README.md"
 license = "Apache-2.0"
