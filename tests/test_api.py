@@ -1,5 +1,5 @@
 from microsandbox_studio import api
-from microsandbox_studio.models import NewSandbox
+from microsandbox_studio.models import NewSandbox, SandboxSettings
 
 
 def test_api_exposes_only_its_methods():
@@ -7,16 +7,19 @@ def test_api_exposes_only_its_methods():
     assert public == {
         "create_sandbox",
         "delete_sandbox",
+        "delete_snapshot",
         "get_environment",
         "get_ssh",
         "list_sandboxes",
         "remove_ssh",
+        "restore_snapshot",
         "save_environment",
         "save_resources",
         "select_workspace_folders",
         "set_up_ssh",
         "start_sandbox",
         "stop_sandbox",
+        "take_snapshot",
     }
 
 
@@ -49,3 +52,10 @@ def test_new_sandbox_validates_the_whole_form(tmp_path):
     )
     defaults = NewSandbox.model_validate({"name": "dev", "image": "ubuntu:24.04", "cpus": 1, "memory": 512})
     assert (defaults.folders, defaults.environment.secrets, defaults.network.mode) == ([], {}, "internet")
+
+
+def test_restore_form_needs_no_image(tmp_path):
+    form = {"name": "copy", "cpus": 2, "memory": 2048, "folders": [str(tmp_path)], "network": {"mode": "all"}}
+    restored = SandboxSettings.model_validate(form)
+    assert (restored.name, restored.folders, restored.network.mode) == ("copy", [str(tmp_path.resolve())], "all")
+    assert "image" not in SandboxSettings.model_fields

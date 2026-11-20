@@ -8,7 +8,7 @@ import SandboxCard from './components/SandboxCard.vue'
 
 const CreateDialog = defineAsyncComponent(() => import('./components/CreateDialog.vue'))
 
-const sandboxes = ref([]), limit = ref(Infinity), loaded = ref(false), loading = ref(false), creating = ref(false)
+const sandboxes = ref([]), limit = ref(Infinity), loaded = ref(false), loading = ref(false), creating = ref(false), restoring = ref(null)
 const ssh = ref({ on: false, included: false, include: '', config: '' }), sshDialog = ref(false), settingUp = ref(false)
 const toast = ref({ show: false, text: '', color: '' })
 
@@ -18,6 +18,8 @@ const year = new Date().getFullYear()
 const { copy, copyIcon } = useCopy()
 
 const notify = (text, color = 'success') => { toast.value = { show: true, text, color } }
+const newSandbox = () => { restoring.value = null; creating.value = true }
+const restore = source => { restoring.value = source; creating.value = true }
 
 async function refresh() {
   loading.value = true
@@ -54,7 +56,7 @@ onMounted(() => bridgeReady().then(refresh))
         :model-value="ssh.on" label="Use SSH" color="success" base-color="error" inset size="x-small" hide-details density="compact"
         class="flex-grow-0 mr-6" @update:model-value="sshDialog = true"
       />
-      <v-btn class="mr-3" color="primary" variant="tonal" prepend-icon="mdi-plus" :disabled="full" @click="creating = true">New sandbox</v-btn>
+      <v-btn class="mr-3" color="primary" variant="tonal" prepend-icon="mdi-plus" :disabled="full" @click="newSandbox">New sandbox</v-btn>
     </v-app-bar>
 
     <v-main>
@@ -71,7 +73,7 @@ onMounted(() => bridgeReady().then(refresh))
         </v-alert>
         <v-row v-if="sandboxes.length">
           <v-col v-for="sandbox in sandboxes" :key="sandbox.name" cols="12" md="6" lg="4" xl="3">
-            <SandboxCard :sandbox="sandbox" :ssh="ssh" @changed="refresh" @notify="notify" />
+            <SandboxCard :sandbox="sandbox" :ssh="ssh" @changed="refresh" @notify="notify" @restore="restore" />
           </v-col>
         </v-row>
 
@@ -80,7 +82,7 @@ onMounted(() => bridgeReady().then(refresh))
             <img :src="logo" alt="" width="96" height="96" class="mb-5">
             <h1 class="text-headline-small font-pixel mb-2">no sandboxes yet.</h1>
             <p class="text-body-large text-medium-emphasis mb-6">Create a sandbox, then reach it over SSH from your terminal, editor or agent harness.</p>
-            <v-btn color="primary" size="large" prepend-icon="mdi-plus" @click="creating = true">Create sandbox</v-btn>
+            <v-btn color="primary" size="large" prepend-icon="mdi-plus" @click="newSandbox">Create sandbox</v-btn>
           </v-card>
         </div>
       </v-container>
@@ -118,6 +120,6 @@ onMounted(() => bridgeReady().then(refresh))
       </v-card>
     </v-dialog>
 
-    <CreateDialog v-model="creating" @created="name => { notify(`${name} created.`); refresh() }" />
+    <CreateDialog v-model="creating" :restore="restoring" @created="name => { notify(`${name} created.`); refresh() }" />
   </v-app>
 </template>

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { defaultNetwork, emptyRows, environmentSummary, fromRows, hosts, modeDescription, networkSummary, once, portNumber, required, resourcesSummary, sandboxName, statusText, toRows, variableName, workspaceSummary } from '../src/sandbox.js'
+import { defaultNetwork, emptyRows, environmentSummary, fromRows, hosts, modeDescription, networkSummary, once, portNumber, required, resourcesSummary, sandboxName, snapshotSummary, statusText, toRows, variableName, workspaceSummary } from '../src/sandbox.js'
 
 test('environment rows round trip and skip rows without a name', () => {
   const settings = { env: { MODE: 'dev' }, secrets: { TOKEN: { value: '', allow: ['a.com', 'b.com'] } } }
@@ -49,4 +49,9 @@ test('form rules', () => {
   assert.equal(typeof hosts(' , '), 'string')
   assert.equal(once([1, 2], 'x')(1), true)
   assert.equal(once([1, 1], 'x')(1), 'x')
+})
+
+test('snapshot summary', () => {
+  assert.equal(snapshotSummary([]), 'None')
+  assert.equal(snapshotSummary([{ reference: '/a' }]), '1 snapshot')
 })

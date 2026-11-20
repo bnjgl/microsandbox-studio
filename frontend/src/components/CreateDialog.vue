@@ -1,20 +1,35 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { api } from '../bridge'
 import { useTask } from '../composables'
-import { CPU_CHOICES, MEMORY_CHOICES, MODES, defaultNetwork, emptyRows, environmentSummary, fromRows, networkSummary, newPort, once, portNumber, required, sandboxName, workspaceSummary } from '../sandbox'
+import { CPU_CHOICES, MEMORY_CHOICES, MODES, defaultNetwork, emptyRows, environmentSummary, fromRows, networkSummary, newPort, once, portNumber, required, sandboxName, snapshotDate, toRows, workspaceSummary } from '../sandbox'
 import EnvironmentForm from './EnvironmentForm.vue'
 import WorkspaceFolders from './WorkspaceFolders.vue'
 
 const open = defineModel({ type: Boolean })
+const props = defineProps({ restore: { type: Object, default: null } })
 const emit = defineEmits(['created'])
 
-const defaults = () => ({
+const defaults = (source = props.restore?.sandbox) => source ? {
+  name: '', image: source.image, cpus: source.cpus, memory: source.memory,
+  folders: source.folders.map(folder => ({ ...folder })), environment: emptyRows(),
+  network: {
+    mode: MODES.some(mode => mode.value === source.network.mode) ? source.network.mode : defaultNetwork().mode,
+    ports: source.network.ports.map(port => ({ ...port })),
+  },
+} : {
   name: '', image: 'mcr.microsoft.com/devcontainers/base:ubuntu-24.04', cpus: 1, memory: 1024,
   folders: [], environment: emptyRows(), network: defaultNetwork(),
-})
+}
 const form = ref(defaults()), formRef = ref(null)
 const { busy: creating, error, run } = useTask()
+
+let formFor = null
+watch(open, isOpen => {
+  if (!isOpen || props.restore === formFor) return
+  formFor = props.restore; form.value = defaults(); error.value = ''
+  if (props.restore) run(async () => { form.value.environment = toRows(await api().get_environment(props.restore.sandbox.name)) })
+}, { immediate: true })
 const variables = computed(() => fromRows(form.value.environment))
 const hostPorts = computed(() => form.value.network.ports.map(port => port.host))
 const counts = computed(() => ({ variables: Object.keys(variables.value.env).length, secrets: Object.keys(variables.value.secrets).length }))
@@ -23,12 +38,11 @@ async function create() {
   if (!(await formRef.value.validate()).valid) { error.value = 'Check the marked fields.'; return }
   return run(async () => {
     const { name, image, cpus, memory, folders, network } = form.value
-    await api().create_sandbox({
-      name: name.trim(), image: image.trim(), cpus, memory, folders: folders.map(folder => folder.source),
-      environment: variables.value, network,
-    })
+    const settings = { name: name.trim(), cpus, memory, folders: folders.map(folder => folder.source), environment: variables.value, network }
+    if (props.restore) await api().restore_snapshot(props.restore.snapshot.reference, settings)
+    else await api().create_sandbox({ ...settings, image: image.trim() })
     emit('created', name.trim())
-    form.value = defaults()
+    formFor = undefined
     open.value = false
   })
 }
@@ -37,12 +51,15 @@ async function create() {
 <template>
   <v-dialog v-model="open" max-width="720" scrollable :persistent="creating">
     <v-card color="surface">
-      <v-card-title class="px-6 pt-6 text-title-large font-pixel">New sandbox</v-card-title>
+      <v-card-title class="px-6 pt-6 text-title-large font-pixel">{{ restore ? 'Restore snapshot' : 'New sandbox' }}</v-card-title>
       <v-card-text class="px-6 pt-4">
         <v-form ref="formRef" validate-on="blur">
         <v-alert v-if="error" type="error" variant="tonal" class="mb-4 text-pre-wrap">{{ error }}</v-alert>
+        <v-alert v-if="restore" type="info" variant="tonal" density="compact" class="mb-4">
+          Creates a new sandbox with the files of {{ restore.sandbox.name }} from {{ snapshotDate(restore.snapshot.created) }}. The image comes from the snapshot.
+        </v-alert>
         <v-text-field v-model="form.name" label="Name" placeholder="devbox" variant="outlined" :rules="[sandboxName]" autofocus class="mb-2" :disabled="creating" />
-        <v-text-field v-model="form.image" label="Container image" variant="outlined" :rules="[required]" class="mb-2" :disabled="creating" />
+        <v-text-field v-model="form.image" label="Container image" variant="outlined" :rules="[required]" class="mb-2" :disabled="creating || !!restore" />
         <v-row>
           <v-col cols="6"><v-select v-model="form.cpus" label="CPUs" :items="CPU_CHOICES" variant="outlined" :disabled="creating" /></v-col>
           <v-col cols="6"><v-select v-model="form.memory" label="Memory (MiB)" :items="MEMORY_CHOICES" variant="outlined" :disabled="creating" /></v-col>
@@ -89,13 +106,13 @@ async function create() {
             <v-expansion-panel-text><WorkspaceFolders v-model="form.folders" :disabled="creating" /></v-expansion-panel-text>
           </v-expansion-panel>
         </v-expansion-panels>
-        <p class="text-body-small text-medium-emphasis mt-3">Network and workspace folders cannot be changed later.</p>
+        <p class="text-body-small text-medium-emphasis mt-3">Network and workspace folders cannot be changed later. To change them, take a snapshot and restore it.</p>
         </v-form>
       </v-card-text>
       <v-card-actions class="px-6 pb-6">
         <v-spacer />
         <v-btn variant="text" :disabled="creating" @click="open = false">Cancel</v-btn>
-        <v-btn color="primary" :loading="creating" @click="create">Create</v-btn>
+        <v-btn color="primary" :loading="creating" @click="create">{{ restore ? 'Restore' : 'Create' }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

@@ -59,3 +59,6 @@ export const environmentSummary = ({ variables, secrets }) =>
   `${count(variables, 'variable', 'variables')} · ${count(secrets, 'secret', 'secrets')}`
 
 export const workspaceSummary = folders => folders.length ? count(folders.length, 'folder', 'folders') : 'None'
+
+export const snapshotSummary = snapshots => snapshots.length ? count(snapshots.length, 'snapshot', 'snapshots') : 'None'
+export const snapshotDate = created => new Date(created).toLocaleString()

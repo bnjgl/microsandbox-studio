@@ -39,7 +39,7 @@ Click **New sandbox**, give it a name and pick an image. The default image is an
 
 You can add variables and secrets, choose the network and add folders from your computer. Programs in the sandbox only see a placeholder for each secret. Microsandbox puts in the real value on the way to the hosts you allow.
 
-The network and the folders are fixed once the sandbox exists. Everything else can be changed later on its card.
+The network and the folders are fixed once the sandbox exists. Everything else can be changed later on its card. To use another network or other folders, take a snapshot under **Snapshots** and restore it into a new sandbox.
 
 <p align="center">
   <img src="docs/images/new-sandbox.png" alt="The New sandbox dialog" width="520">

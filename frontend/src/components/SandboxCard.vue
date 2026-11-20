@@ -1,24 +1,36 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { api } from '../bridge'
-import { environmentSummary, modeDescription, networkSummary, resourcesSummary, statusColor, statusText, workspaceSummary } from '../sandbox'
+import { environmentSummary, modeDescription, networkSummary, resourcesSummary, snapshotDate, snapshotSummary, statusColor, statusText, workspaceSummary } from '../sandbox'
 import EnvironmentEditor from './EnvironmentEditor.vue'
 import ResourcesEditor from './ResourcesEditor.vue'
 import SshPanel from './SshPanel.vue'
 
 const props = defineProps({ sandbox: { type: Object, required: true }, ssh: { type: Object, required: true } })
-const emit = defineEmits(['changed', 'notify'])
+const emit = defineEmits(['changed', 'notify', 'restore'])
 
+const { name } = props.sandbox
 const dialog = ref('')
 const busy = ref('')
-const unfolded = ref({ network: false, folders: false })
+const removing = ref(null)
+const unfolded = ref({ network: false, folders: false, snapshots: false })
 const running = computed(() => props.sandbox.status === 'running')
 const dialogOpen = computed({ get: () => !!dialog.value, set: open => { if (!open) dialog.value = '' } })
 const DIALOG_TITLES = { resources: 'Resources', environment: 'Variables & secrets' }
 
 const CONFIRM = {
-  stop: { title: 'Stop', text: 'Programs in the sandbox end and SSH connections drop. Files stay.', color: 'primary' },
-  delete: { title: 'Delete', text: 'The sandbox and its data are removed permanently. Mounted host folders are kept.', color: 'error' },
+  stop: {
+    title: 'Stop', text: 'Programs in the sandbox end and SSH connections drop. Files stay.', color: 'primary',
+    run: () => api().stop_sandbox(name), done: `${name} stopped.`,
+  },
+  delete: {
+    title: 'Delete', text: 'The sandbox, its data and its snapshots are removed permanently. Mounted host folders are kept.', color: 'error',
+    run: () => api().delete_sandbox(name), done: `${name} deleted.`,
+  },
+  snapshot: {
+    title: 'Delete', question: 'Delete this snapshot?', text: 'The snapshot is removed permanently. Sandboxes restored from it are kept.', color: 'error',
+    run: () => api().delete_snapshot(name, removing.value.reference), done: 'Snapshot deleted.',
+  },
 }
 const menu = computed(() => [
   ...(running.value ? [{ title: 'Stop', icon: 'mdi-stop', dialog: 'stop' }] : []),
@@ -30,12 +42,12 @@ async function act(action, task) {
   try { const message = await task(); if (message) emit('notify', message) } catch (e) { emit('notify', String(e), 'error') }
   finally { busy.value = ''; emit('changed') }
 }
-const { name } = props.sandbox
 const start = () => act('start', () => api().start_sandbox(name))
+const takeSnapshot = () => act('take', async () => { await api().take_snapshot(name); return 'Snapshot taken.' })
 const confirmed = action => act(action, async () => {
-  await (action === 'stop' ? api().stop_sandbox(name) : api().delete_sandbox(name))
+  await CONFIRM[action].run()
   dialog.value = ''
-  return action === 'stop' ? `${name} stopped.` : `${name} deleted.`
+  return CONFIRM[action].done
 })
 const sshText = computed(() => {
   if (!props.sandbox.host) return 'This name cannot be used as an SSH host'
@@ -114,12 +126,33 @@ function saved(message) { dialog.value = ''; emit('notify', message); emit('chan
           <p v-if="!sandbox.folders.length" class="text-medium-emphasis">No folders mounted.</p>
         </div>
       </v-expand-transition>
+
+      <v-list-item prepend-icon="mdi-camera-outline" title="Snapshots" @click="unfolded.snapshots = !unfolded.snapshots">
+        <template #append>
+          <v-chip size="small" variant="tonal">{{ snapshotSummary(sandbox.snapshots) }}</v-chip>
+          <v-icon class="ml-1" size="20">{{ unfolded.snapshots ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
+        </template>
+      </v-list-item>
+      <v-expand-transition>
+        <div v-if="unfolded.snapshots" class="px-4 pb-3 text-body-small">
+          <v-btn block variant="tonal" size="small" prepend-icon="mdi-camera-plus-outline" class="mb-2" :loading="busy === 'take'" :disabled="!!busy" @click="takeSnapshot">Take snapshot</v-btn>
+          <div v-for="snapshot in sandbox.snapshots" :key="snapshot.reference" class="d-flex align-center ga-1">
+            <div class="flex-grow-1 text-break">
+              <div>{{ snapshotDate(snapshot.created) }}</div>
+              <div class="text-medium-emphasis font-monospace">{{ snapshot.name }}</div>
+            </div>
+            <v-btn icon="mdi-backup-restore" size="small" variant="text" title="New sandbox from this snapshot" aria-label="New sandbox from this snapshot" :disabled="!!busy" @click="emit('restore', { sandbox, snapshot })" />
+            <v-btn icon="mdi-delete-outline" size="small" variant="text" color="error" title="Delete snapshot" aria-label="Delete snapshot" :disabled="!!busy" @click="removing = snapshot; dialog = 'snapshot'" />
+          </div>
+          <p v-if="!sandbox.snapshots.length" class="text-medium-emphasis">No snapshots yet.</p>
+        </div>
+      </v-expand-transition>
     </v-list>
   </v-card>
 
   <v-dialog v-model="dialogOpen" :max-width="CONFIRM[dialog] ? 420 : 760" scrollable :persistent="busy === dialog">
     <v-card v-if="CONFIRM[dialog]" color="surface">
-      <v-card-title class="px-6 pt-6 font-pixel">{{ CONFIRM[dialog].title }} {{ sandbox.name }}?</v-card-title>
+      <v-card-title class="px-6 pt-6 font-pixel">{{ CONFIRM[dialog].question ?? `${CONFIRM[dialog].title} ${sandbox.name}?` }}</v-card-title>
       <v-card-text class="px-6">{{ CONFIRM[dialog].text }}</v-card-text>
       <v-card-actions class="px-6 pb-6">
         <v-spacer />

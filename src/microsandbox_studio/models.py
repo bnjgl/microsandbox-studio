@@ -79,12 +79,15 @@ class Resources(BaseModel):
     memory: int = Field(ge=1)
 
 
-class NewSandbox(Resources):
+class SandboxSettings(Resources):
     name: str = Field(min_length=1)
-    image: str = Field(min_length=1)
     folders: Folders = []
     environment: EnvironmentSettings = Field(default_factory=EnvironmentSettings)
     network: NetworkSettings = Field(default_factory=NetworkSettings)
+
+
+class NewSandbox(SandboxSettings):
+    image: str = Field(min_length=1)
 
 
 _SSH_NAME = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$")
