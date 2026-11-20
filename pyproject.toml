@@ -1,6 +1,6 @@
 [project]
 name = "microsandbox-studio"
-version = "0.1.0"
+version = "0.1.1"
 description = "Microsandbox Studio: desktop app for local microsandbox environments"
 readme = "README.md"
 license = "Apache-2.0"
@@ -10,7 +10,7 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "microsandbox==0.7.11",
+    "microsandbox==0.7.16",
     "pydantic>=2.14.1",
     "pywebview>=6.2.1",
     "pygobject; sys_platform == 'linux'",
