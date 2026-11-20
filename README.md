@@ -18,6 +18,7 @@ The app does only a few things and keeps them simple:
 - Set CPUs, memory, variables and secrets
 - Choose the network and publish ports
 - Mount folders from your computer
+- Upload files into a running sandbox
 - Open every sandbox over SSH
 
 ## Download

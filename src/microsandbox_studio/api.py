@@ -1,7 +1,8 @@
 import asyncio
+import base64
 import functools
 from collections.abc import Callable, Coroutine
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 import webview
@@ -80,6 +81,12 @@ class Api:
     @async_to_sync
     async def delete_snapshot(self, name: str, reference: str) -> None:
         await self._remove_snapshot(name, reference)
+
+    @async_to_sync
+    async def upload_file(self, name: str, folder: str, filename: str, data: str) -> None:
+        sandbox = await (await Sandbox.get(name)).connect()
+        await sandbox.fs.mkdir(folder)
+        await sandbox.fs.write(str(PurePosixPath(folder, filename)), base64.b64decode(data))
 
     @async_to_sync
     async def start_sandbox(self, name: str) -> None:

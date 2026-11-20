@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { api } from '../bridge'
-import { environmentSummary, modeDescription, networkSummary, resourcesSummary, snapshotDate, snapshotSummary, statusColor, statusText, workspaceSummary } from '../sandbox'
+import { count, environmentSummary, modeDescription, networkSummary, resourcesSummary, snapshotDate, snapshotSummary, statusColor, statusText, workspaceSummary } from '../sandbox'
 import EnvironmentEditor from './EnvironmentEditor.vue'
 import ResourcesEditor from './ResourcesEditor.vue'
 import SshPanel from './SshPanel.vue'
@@ -33,7 +33,7 @@ const CONFIRM = {
   },
 }
 const menu = computed(() => [
-  ...(running.value ? [{ title: 'Stop', icon: 'mdi-stop', dialog: 'stop' }] : []),
+  ...(running.value ? [{ title: 'Upload files', icon: 'mdi-file-upload-outline', dialog: 'upload' }, { title: 'Stop', icon: 'mdi-stop', dialog: 'stop' }] : []),
   { title: 'Delete', icon: 'mdi-delete-outline', dialog: 'delete', color: 'error' },
 ])
 
@@ -44,6 +44,20 @@ async function act(action, task) {
 }
 const start = () => act('start', () => api().start_sandbox(name))
 const takeSnapshot = () => act('take', async () => { await api().take_snapshot(name); return 'Snapshot taken.' })
+const target = ref('/uploads'), files = ref([])
+const base64 = file => new Promise((resolve, reject) => {
+  const reader = new FileReader()
+  reader.onload = () => resolve(reader.result.split(',')[1])
+  reader.onerror = () => reject(reader.error)
+  reader.readAsDataURL(file)
+})
+const upload = () => act('upload', async () => {
+  for (const file of files.value) await api().upload_file(name, target.value, file.name, await base64(file))
+  const message = `${count(files.value.length, 'file', 'files')} uploaded to ${target.value}.`
+  files.value = []
+  dialog.value = ''
+  return message
+})
 const confirmed = action => act(action, async () => {
   await CONFIRM[action].run()
   dialog.value = ''
@@ -150,8 +164,21 @@ function saved(message) { dialog.value = ''; emit('notify', message); emit('chan
     </v-list>
   </v-card>
 
-  <v-dialog v-model="dialogOpen" :max-width="CONFIRM[dialog] ? 420 : 760" scrollable :persistent="busy === dialog">
-    <v-card v-if="CONFIRM[dialog]" color="surface">
+  <v-dialog v-model="dialogOpen" :max-width="CONFIRM[dialog] ? 420 : dialog === 'upload' ? 560 : 760" scrollable :persistent="busy === dialog">
+    <v-card v-if="dialog === 'upload'" color="surface">
+      <v-card-title class="px-6 pt-6 font-pixel">Upload files to {{ sandbox.name }}</v-card-title>
+      <v-card-text class="px-6">
+        <v-text-field v-model="target" label="Folder in the sandbox" variant="outlined" hide-details="auto" class="mb-4" :rules="[v => v.startsWith('/') || 'Starts with /']" :disabled="busy === 'upload'" />
+        <v-file-upload v-model="files" multiple clearable show-size density="compact" :disabled="busy === 'upload'" />
+        <p class="text-body-small text-medium-emphasis mt-2">The folder is created if needed. Files with the same name are replaced.</p>
+      </v-card-text>
+      <v-card-actions class="px-6 pb-6">
+        <v-spacer />
+        <v-btn variant="text" :disabled="busy === 'upload'" @click="dialog = ''">Cancel</v-btn>
+        <v-btn color="primary" variant="flat" :loading="busy === 'upload'" :disabled="!files.length || !target.startsWith('/')" @click="upload">Upload</v-btn>
+      </v-card-actions>
+    </v-card>
+    <v-card v-else-if="CONFIRM[dialog]" color="surface">
       <v-card-title class="px-6 pt-6 font-pixel">{{ CONFIRM[dialog].question ?? `${CONFIRM[dialog].title} ${sandbox.name}?` }}</v-card-title>
       <v-card-text class="px-6">{{ CONFIRM[dialog].text }}</v-card-text>
       <v-card-actions class="px-6 pb-6">

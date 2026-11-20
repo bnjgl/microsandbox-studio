@@ -20,6 +20,7 @@ def test_api_exposes_only_its_methods():
         "start_sandbox",
         "stop_sandbox",
         "take_snapshot",
+        "upload_file",
     }
 
 
