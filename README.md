@@ -12,7 +12,7 @@
 
 Microsandbox runs small virtual machines on your computer. Microsandbox Studio puts them in one window. Every sandbox is a card. You create, start and stop sandboxes with a click, and you reach any of them over SSH as `<name>.msb`, from a terminal, an editor or Claude Code.
 
-The app does a few things and keeps them simple:
+The app does only a few things and keeps them simple:
 
 - Create a sandbox from any container image
 - Set CPUs, memory, variables and secrets
@@ -22,11 +22,16 @@ The app does a few things and keeps them simple:
 
 ## Download
 
+> [!IMPORTANT]
+> Microsandbox Studio needs Microsandbox on your computer. Before you install the app, set up your system as described in the [Microsandbox quickstart](https://docs.microsandbox.dev/getting-started/quickstart).
+
 Get the installer for your system from the [releases page](https://github.com/bnjgl/microsandbox-studio/releases)
 
 You need macOS on Apple Silicon, Linux with KVM, or Windows with the Windows Hypervisor Platform turned on.
 
-The macOS app is not signed by Apple. On the first start, open it with a right click and **Open**, or allow it under **System Settings > Privacy & Security**.
+The macOS app is not signed by Apple. On the first start allow it under **System Settings > Privacy & Security**.
+
+On Linux the app does not bring its own Python. Install Python 3.12 or later first.
 
 ## Create a sandbox
 
@@ -58,7 +63,7 @@ The network and the folders are fixed once the sandbox exists. Everything else c
 
 Programs run as `root`. For another user of the image, write it in front of the host, for example `vscode@devbox.msb`.
 
-On Windows, the Claude app needs Microsoft's OpenSSH client 9.4 or later, and the app has to come from [claude.com](https://claude.com/download), not from the Microsoft Store. See [SSH sessions](https://code.claude.com/docs/en/desktop) in the Claude Code docs.
+On Windows the app has to come from [claude.com](https://claude.com/download), not from the Microsoft Store. See [SSH sessions](https://code.claude.com/docs/en/desktop) in the Claude Code docs.
 
 The same host works everywhere else too, for example `ssh devbox.msb` in a terminal or Remote SSH in VS Code.
 
@@ -74,12 +79,6 @@ npm ci
 npm run build
 cd ..
 uv run microsandbox-studio
-```
-
-On Linux, the window uses GTK. On Ubuntu and Debian, install its parts first:
-
-```bash
-sudo apt install libcairo2-dev libgirepository-2.0-dev gir1.2-webkit2-4.1
 ```
 
 To build the app for your system and start it, run these after the frontend build:
