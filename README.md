@@ -27,7 +27,7 @@ The app does only a few things and keeps them simple:
 
 Get the installer for your system from the [releases page](https://github.com/bnjgl/microsandbox-studio/releases)
 
-You need macOS on Apple Silicon, Linux with KVM, or Windows with the Windows Hypervisor Platform turned on.
+You need macOS 14 or later on Apple Silicon, Linux with KVM, or Windows with the Windows Hypervisor Platform turned on.
 
 The macOS app is not signed by Apple. On the first start allow it under **System Settings > Privacy & Security**.
 

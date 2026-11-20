@@ -49,6 +49,7 @@ icon = "src/microsandbox_studio/assets/icon"
 
 [tool.briefcase.app.microsandbox-studio.macOS]
 universal_build = false
+min_os_version = "14.0"
 entitlement."com.apple.security.hypervisor" = true
 requirement_installer_args = ["--find-links", "./wheels"]
 
